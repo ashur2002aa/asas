@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Page</title>
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1, h2, h3 {
+            color: #333;
+        }
+
+        input {
+            padding: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .order-card {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul li {
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Manager Dashboard</h1>
+
+    <!-- Section to create a new order -->
+    <div>
+        <h2>Create a New Order</h2>
+        <label for="orderDetails">Order Details:</label>
+        <input type="text" id="orderDetails" placeholder="Enter order details here">
+        <button id="createOrder">Create Order</button>
+    </div>
+
+    <!-- Section to display active orders and employee actions -->
+    <div>
+        <h2>Active Orders</h2>
+        <div id="ordersList"></div>
+    </div>
+
+    <script>
+        // Import the functions you need from the SDKs you need
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm3fuWXF3YlvS2ijfeaiTz5-Akx-EGfRQ",
+            authDomain: "companies-data-372c3.firebaseapp.com",
+            projectId: "companies-data-372c3",
+            storageBucket: "companies-data-372c3.appspot.com",
+            messagingSenderId: "959461640772",
+            appId: "1:959461640772:web:446c1c3332638ae2050a11"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+
+        // Function to create a new order
+        const createOrderButton = document.getElementById('createOrder');
+        createOrderButton.addEventListener('click', () => {
+            const orderDetails = document.getElementById('orderDetails').value;
+
+            if (orderDetails === "") {
+                alert("Please enter order details!");
+                return;
+            }
+
+            // Add new order to Firestore with an empty employees map
+            db.collection('manager').add({
+                employees: {}, // Initialize with no employee actions
+                details: orderDetails,
+                status: "pending",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                alert("Order created successfully!");
+                document.getElementById('orderDetails').value = ""; // Clear input field
+            }).catch((error) => {
+                console.error("Error creating order: ", error);
+            });
+        });
+
+        // Function to display active orders and employee actions
+        function displayOrders() {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = ""; // Clear current orders
+
+            // Fetch orders from the "manager" collection
+            db.collection('manager').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+                snapshot.forEach((doc) => {
+                    const order = doc.data();
+                    const orderId = doc.id;
+
+                    // Create an order card
+                    const orderCard = document.createElement('div');
+                    orderCard.classList.add('order-card');
+                    orderCard.innerHTML = `
+                        <h3>Order: ${order.details}</h3>
+                        <p>Status: ${order.status}</p>
+                        <p>Order ID: ${orderId}</p>
+                        <h4>Employee Actions:</h4>
+                        <ul>
+                            ${Object.keys(order.employees).map(employeeId => {
+                                const employee = order.employees[employeeId];
+                                return `
+                                    <li>
+                                        <strong>Employee: ${employeeId}</strong>
+                                        <p>Accepted: ${employee.accepted ? 'Yes' : 'No'}</p>
+                                        <p>Accepted At: ${employee.acceptTimestamp ? employee.acceptTimestamp.toDate() : "N/A"}</p>
+                                        <p>Finished: ${employee.finishPressed ? 'Yes' : 'No'}</p>
+                                        <p>Finished At: ${employee.finishTimestamp ? employee.finishTimestamp.toDate() : "N/A"}</p>
+                                        <p>Failed: ${employee.failedPressed ? 'Yes' : 'No'}</p>
+                                        <p>Failed Reason: ${employee.failReason || "N/A"}</p>
+                                        <p>Failed At: ${employee.failTimestamp ? employee.failTimestamp.toDate() : "N/A"}</p>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    `;
+                    ordersList.appendChild(orderCard);
+                });
+            });
+        }
+
+        // Call the function to display orders on page load
+        displayOrders();
+
+    </script>
+</body>
+</html>

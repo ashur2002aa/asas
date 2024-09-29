@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee 1 Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        button {
+            margin-top: 10px;
+        }
+    </style>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, collection, getDocs, updateDoc, doc } from "firebase/firestore";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm3fuWXF3YlvS2ijfeaiTz5-Akx-EGfRQ",
+            authDomain: "companies-data-372c3.firebaseapp.com",
+            projectId: "companies-data-372c3",
+            storageBucket: "companies-data-372c3.appspot.com",
+            messagingSenderId: "959461640772",
+            appId: "1:959461640772:web:446c1c3332638ae2050a11"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to fetch orders for Employee 1
+        async function fetchOrders() {
+            const orderRef = collection(db, "manager"); // Collection name
+            const orderDocs = await getDocs(orderRef);
+            const ordersDiv = document.getElementById("orders");
+            ordersDiv.innerHTML = ""; // Clear existing orders
+
+            orderDocs.forEach(doc => {
+                const data = doc.data();
+                if (data.employees.employee1) { // Check if order is for Employee 1
+                    const orderDetails = data.employees.employee1;
+                    const orderDiv = document.createElement("div");
+                    orderDiv.innerHTML = `
+                        <p>Order Status: ${orderDetails.accepted ? "Accepted" : "Pending"}</p>
+                        <button onclick="acceptOrder('${doc.id}')">Accept</button>
+                        <button onclick="cancelOrder('${doc.id}')">Cancel</button>
+                    `;
+                    ordersDiv.appendChild(orderDiv);
+                }
+            });
+        }
+
+        // Function to accept an order
+        async function acceptOrder(orderId) {
+            const orderRef = doc(db, "manager", orderId);
+            await updateDoc(orderRef, {
+                employees: {
+                    ...employees,
+                    employee1: {
+                        accepted: true,
+                        acceptTimestamp: new Date(),
+                        finishPressed: false,
+                        finishTimestamp: null,
+                        failedPressed: false,
+                        failReason: "",
+                        failTimestamp: null
+                    }
+                }
+            });
+            fetchOrders(); // Refresh the order list
+        }
+
+        // Function to cancel an order
+        async function cancelOrder(orderId) {
+            const orderRef = doc(db, "manager", orderId);
+            await updateDoc(orderRef, {
+                employees: {
+                    ...employees,
+                    employee1: {
+                        accepted: false,
+                        acceptTimestamp: null,
+                        finishPressed: false,
+                        finishTimestamp: null,
+                        failedPressed: false,
+                        failReason: "",
+                        failTimestamp: null
+                    }
+                }
+            });
+            fetchOrders(); // Refresh the order list
+        }
+
+        // Fetch orders when the page loads
+        window.onload = fetchOrders;
+    </script>
+</head>
+<body>
+    <h1>Employee 1 Page</h1>
+    <div id="orders">
+        <h2>Your Orders:</h2>
+        <!-- Orders will be populated here -->
+    </div>
+</body>
+</html>
+
+
